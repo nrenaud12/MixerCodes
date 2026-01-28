@@ -3,20 +3,19 @@
 clear; clc;
 
 %% ---- user settings ----
-VENDOR = 'KEYSIGHT';
-BOARD  = 7;     % GPIB board index
 ADDR   = 15;    % signal generator GPIB address
-timeout_s = 3;
+timeout_s = 3;  % seconds
 
 f_GHz = 1.000;  % target frequency
 p_dBm = -10;    % target power
 
 settle_s = 0.1;
 
-%% ---- open signal generator ----
-gen = gpib(VENDOR, BOARD, ADDR);
+%% ---- open signal generator (VISA) ----
+T = visadevlist;
+gen_rsrc = find_gpib_resource(T, ADDR);
+gen = visadev(gen_rsrc);
 gen.Timeout = timeout_s;
-fopen(gen);
 cleanupObj = onCleanup(@() close_one(gen)); %#ok<NASGU>
 
 idn = safe_idn(gen);
@@ -40,26 +39,25 @@ fprintf('Set: f=%.6f GHz, P=%.1f dBm. Exiting now.\n', f_GHz, p_dBm);
 function out = safe_idn(dev)
     out = "";
     try
-        fprintf(dev, '*IDN?');
-        out = strtrim(fscanf(dev));
+        writeline(dev, '*IDN?');
+        out = strtrim(readline(dev));
     catch
     end
 end
 
 function close_one(inst)
     try
-        if ~isempty(inst) && strcmpi(inst.Status,'open')
-            fclose(inst);
+        if ~isempty(inst)
+            clear inst;
         end
     catch
     end
-    try, delete(inst); catch, end
 end
 
 function scpi_try_soft(inst, cmdList)
     if ischar(cmdList), cmdList = {cmdList}; end
     for i = 1:numel(cmdList)
-        try, fprintf(inst, cmdList{i}); return; catch, end
+        try, writeline(inst, cmdList{i}); return; catch, end
     end
 end
 
@@ -116,10 +114,20 @@ function src_set_freq_Hz_units(dev, fHz)
     };
     for i = 1:numel(cmdList)
         try
-            fprintf(dev, cmdList{i});
+            writeline(dev, cmdList{i});
             pause(0.02);
             return;
         catch
         end
     end
+end
+
+function rsrc = find_gpib_resource(T, addr)
+    names = string(T.ResourceName);
+    pat = "GPIB\\d+::" + string(addr) + "::INSTR";
+    hit = ~cellfun(@isempty, regexp(cellstr(names), pat, 'once'));
+    if ~any(hit)
+        error("No VISA resource found for GPIB address %d. Run visadevlist and verify it appears.", addr);
+    end
+    rsrc = names(find(hit,1,'first'));
 end
