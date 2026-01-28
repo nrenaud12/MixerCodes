@@ -27,7 +27,9 @@ else
 end
 
 %% ---- configure output ----
+src_set_freq_mode_cw(gen);
 src_set_freq_Hz_units(gen, f_GHz * 1e9);
+src_set_power_unit_dbm(gen);
 src_set_power_dBm(gen, p_dBm);
 src_output_on(gen, true);
 pause(settle_s);
@@ -69,12 +71,24 @@ function src_output_on(dev, onoff)
     end
 end
 
+function src_set_freq_mode_cw(dev)
+    scpi_try_soft(dev, {':FREQ:MODE CW','FREQ:MODE CW',':SOUR:FREQ:MODE CW','SOUR:FREQ:MODE CW'});
+end
+
+function src_set_power_unit_dbm(dev)
+    scpi_try_soft(dev, {':POW:UNIT DBM','POW:UNIT DBM',':SOUR:POW:UNIT DBM','SOUR:POW:UNIT DBM'});
+end
+
 function src_set_power_dBm(dev, p_dBm)
     scpi_try_soft(dev, {
-        sprintf(':POW %.3f dBm', p_dBm)
-        sprintf('POW %.3f dBm', p_dBm)
-        sprintf(':POW:LEV %.3f dBm', p_dBm)
-        sprintf('POW:LEV %.3f dBm', p_dBm)
+        sprintf(':POW %.3f', p_dBm)
+        sprintf('POW %.3f', p_dBm)
+        sprintf(':POW:LEV %.3f', p_dBm)
+        sprintf('POW:LEV %.3f', p_dBm)
+        sprintf(':SOUR:POW %.3f', p_dBm)
+        sprintf('SOUR:POW %.3f', p_dBm)
+        sprintf(':SOUR:POW:LEV %.3f', p_dBm)
+        sprintf('SOUR:POW:LEV %.3f', p_dBm)
     });
 end
 
@@ -85,12 +99,20 @@ function src_set_freq_Hz_units(dev, fHz)
         sprintf('FREQ %.6f GHZ',    fGHz)
         sprintf(':FREQ:CW %.6f GHZ', fGHz)
         sprintf(':FREQ %.6f GHZ',    fGHz)
+        sprintf('SOUR:FREQ:CW %.6f GHZ', fGHz)
+        sprintf(':SOUR:FREQ:CW %.6f GHZ', fGHz)
+        sprintf('SOUR:FREQ %.6f GHZ',    fGHz)
+        sprintf(':SOUR:FREQ %.6f GHZ',    fGHz)
         sprintf('FREQ:CW %.3f MHZ', fMHz)
         sprintf('FREQ %.3f MHZ',    fMHz)
         sprintf('FREQ:CW %d HZ',    fInt)
         sprintf('FREQ %d HZ',       fInt)
         sprintf(':FREQ:CW %d',      fInt)
         sprintf(':FREQ %d',         fInt)
+        sprintf('SOUR:FREQ:CW %d',  fInt)
+        sprintf(':SOUR:FREQ:CW %d', fInt)
+        sprintf('SOUR:FREQ %d',     fInt)
+        sprintf(':SOUR:FREQ %d',    fInt)
     };
     for i = 1:numel(cmdList)
         try
