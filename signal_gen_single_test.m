@@ -124,10 +124,16 @@ end
 
 function rsrc = find_gpib_resource(T, addr)
     names = string(T.ResourceName);
-    pat = "GPIB\\d+::" + string(addr) + "::INSTR";
-    hit = ~cellfun(@isempty, regexp(cellstr(names), pat, 'once'));
+    aliases = string(T.Alias);
+    addr_str = "::" + string(addr) + "::INSTR";
+    hit = contains(names, addr_str);
     if ~any(hit)
-        error("No VISA resource found for GPIB address %d. Run visadevlist and verify it appears.", addr);
+        hit = contains(aliases, "GPIB") & contains(aliases, string(addr));
+    end
+    if ~any(hit)
+        rsrc = "GPIB0" + addr_str;
+        warning("No VISA resource match found for GPIB address %d. Falling back to %s.", addr, rsrc);
+        return;
     end
     rsrc = names(find(hit,1,'first'));
 end
