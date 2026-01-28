@@ -12,7 +12,7 @@ to = 3;              % short timeout so scan is quick
 
 fprintf('Scanning GPIB board %d...\n', BOARD);
 
-for addr = 0:30
+for addr = 0:20
     v = [];
     try
         v = gpib(VENDOR, BOARD, addr);

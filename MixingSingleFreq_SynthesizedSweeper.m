@@ -1,6 +1,6 @@
 % Define parameters
-gpibAddress = 15; 
-frequency_GHz = 5;
+gpibAddress = 19; 
+frequency_GHz = 8;
 power_dBm = -10;
 
 resourceName = sprintf('GPIB0::%d::INSTR', gpibAddress);
@@ -13,18 +13,21 @@ try
     
     % 2. SET FREQUENCY (CW mode)
     writeline(sigGen, sprintf('CW%fGZ', frequency_GHz));
+    pause(0.5);
     
     % 3. SET POWER LEVEL
     writeline(sigGen, sprintf('PL%fDB', power_dBm));
+    pause(0.5);
     
     % 4. ENABLE RF OUTPUT
     writeline(sigGen, 'RF1'); 
+    pause(0.5);
     
     fprintf('Signal Generator set to %g GHz at %g dBm. RF is ON.\n', ...
             frequency_GHz, power_dBm);
 
     % ---- Do whatever measurement you want here ----
-     pause(2);  % example: leave it on for 2 seconds
+    pause(5);  % keep on for 2 seconds
 
 catch ME
     warning('Error: %s', ME.message);
@@ -41,4 +44,3 @@ catch ME2
 end
 
 clear sigGen;
-
