@@ -1,35 +1,35 @@
-%% mixer_conversion_loss_sweep.m
-% Sweep RF frequency and record output power at each point.
+% Mixer sweep code
+% Sweep RF frequency, maintain constant IF, and record output power at each point.
 clear; clc;
 
 %% ---- user settings ----
-% Synthesized sweeper (RF source)
-synthAddr = 15;
+% RF Source
+RFAddr = 15;
 rfStart_GHz = 6;
 rfStop_GHz = 12;
 rfStep_GHz = 0.1;
-synthPower_dBm = -10;
+RFPower_dBm = -10;
 
-% Sweep oscillator (LO source)
-oscAddr = 19;
-oscPower_dBm = 10;
-ifTarget_GHz = 1.0;
+% LO Source
+LOAddr = 19;
+LOPower_dBm = 13;
+ifTarget_GHz = 3.0;
 
 % Power sensor
 VENDOR = 'KEYSIGHT';
 BOARD = 7;
-SENSOR_ADDR = 13;
+SENSOR_ADDR = 12;
 SENSOR_TIMEOUT_S = 3;
-OFF_dB = 0; % +20 if reading a -20 dB coupler port
+OFF_dB = 0;            % +20 if reading a -20 dB coupler port
 
 % Timing
-settle_s = 2;          % wait after setting RF before reading power
+settle_s = 2;          % wait after power on before reading power
 write_retries = 3;
 write_pause_s = 0.2;
 
 % Output file
 save_csv = true;
-out_csv = 'mixer_conversion_loss_sweep.csv';
+out_csv = 'mixer_conversion_loss_sweep_1ghz_13dBm.csv';
 
 %% ---- derived sweep list ----
 rfFreqs_GHz = rfStart_GHz:rfStep_GHz:rfStop_GHz;
@@ -37,40 +37,40 @@ numPoints = numel(rfFreqs_GHz);
 measuredPower_dBm = nan(numPoints, 1);
 
 %% ---- open instruments ----
-synth = [];
-osc = [];
+RF = [];
+LO = [];
 pwr = [];
-cleanupSynth = [];
-cleanupOsc = [];
+cleanupRF = [];
+cleanupLO = [];
 cleanupPwr = [];
-rfOnSynth = false;
-rfOnOsc = false;
+rfOn = false;
+loOn = false;
 
 try
-    % Synthesized sweeper (RF source)
-    synth = visadev(sprintf('GPIB0::%d::INSTR', synthAddr));
-    configureTerminator(synth, "LF");
-    cleanupSynth = onCleanup(@() safe_clear(synth));
-    write_with_retry(synth, 'IP', write_retries, write_pause_s);
+    % RF Source
+    RF = visadev(sprintf('GPIB0::%d::INSTR', RFAddr));
+    configureTerminator(RF, "LF");
+    cleanupRF = onCleanup(@() safe_clear(RF));
+    write_with_retry(RF, 'IP', write_retries, write_pause_s);
     pause(0.5);
-    write_with_retry(synth, sprintf('PL%fDB', synthPower_dBm), write_retries, write_pause_s);
-    write_with_retry(synth, 'RF1', write_retries, write_pause_s);
-    rfOnSynth = true;
+    write_with_retry(RF, sprintf('PL%fDB', RFPower_dBm), write_retries, write_pause_s);
+    write_with_retry(RF, 'RF1', write_retries, write_pause_s);
+    rfOn = true;
 
-    fprintf('Synthesizer set to %g dBm. RF is ON.\n', synthPower_dBm);
+    fprintf('Synthesizer set to %g dBm. RF is ON.\n', RFPower_dBm);
 
-    % Sweep oscillator (LO source)
-    osc = visadev(sprintf('GPIB0::%d::INSTR', oscAddr));
-    osc.Timeout = 10;
-    configureTerminator(osc, "LF");
-    cleanupOsc = onCleanup(@() safe_clear(osc));
-    write_with_retry(osc, 'IP', write_retries, write_pause_s);
+    % LO Source
+    LO = visadev(sprintf('GPIB0::%d::INSTR', LOAddr));
+    LO.Timeout = 10;
+    configureTerminator(LO, "LF");
+    cleanupLO = onCleanup(@() safe_clear(LO));
+    write_with_retry(LO, 'IP', write_retries, write_pause_s);
     pause(0.5);
-    write_with_retry(osc, sprintf('PL%.3fDB', oscPower_dBm), write_retries, write_pause_s);
-    write_with_retry(osc, 'RF1', write_retries, write_pause_s);
-    rfOnOsc = true;
+    write_with_retry(LO, sprintf('PL%.3fDB', LOPower_dBm), write_retries, write_pause_s);
+    write_with_retry(LO, 'RF1', write_retries, write_pause_s);
+    loOn = true;
 
-    fprintf('Oscillator set to %.1f dBm. RF is ON.\n', oscPower_dBm);
+    fprintf('Oscillator set to %.1f dBm. RF is ON.\n', LOPower_dBm);
 
     % Power sensor
     pwr = gpib(VENDOR, BOARD, SENSOR_ADDR);
@@ -83,8 +83,8 @@ try
     for idx = 1:numPoints
         rfFreq = rfFreqs_GHz(idx);
         loFreq_GHz = rfFreq - ifTarget_GHz;
-        write_with_retry(synth, sprintf('CW%fGZ', rfFreq), write_retries, write_pause_s);
-        write_with_retry(osc, sprintf('CW%.6fGZ', loFreq_GHz), write_retries, write_pause_s);
+        write_with_retry(RF, sprintf('CW%fGZ', rfFreq), write_retries, write_pause_s);
+        write_with_retry(LO, sprintf('CW%.6fGZ', loFreq_GHz), write_retries, write_pause_s);
         pause(settle_s);
 
         scpi_try_soft(pwr, {':INIT:IMM','INIT:IMM',':INIT','INIT'});
@@ -99,8 +99,8 @@ catch ME
 end
 
 % Explicit shutdown
-safe_rf_off_and_clear(synth, rfOnSynth, write_retries, write_pause_s, 'Synthesizer');
-safe_rf_off_and_clear(osc, rfOnOsc, write_retries, write_pause_s, 'Oscillator');
+safe_rf_off_and_clear(RF, rfOn, write_retries, write_pause_s, 'Synthesizer');
+safe_rf_off_and_clear(LO, loOn, write_retries, write_pause_s, 'Oscillator');
 
 % Save results
 if save_csv

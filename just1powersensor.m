@@ -1,10 +1,8 @@
-%% read_P12_only.m
-% One-shot read of power sensor at GPIB address 12 (P12).
 clear; clc;
 
 VENDOR = 'KEYSIGHT';
-BOARD  = 7;      % <-- GPIB board index
-ADDR   = 13;
+BOARD  = 7;      % GPIB board index
+ADDR   = 12;     %Power sensor address
 timeout_s = 3;
 
 OFF_dB = 0;      % +20 if reading a -20 dB coupler port
@@ -13,7 +11,7 @@ OFF_dB = 0;      % +20 if reading a -20 dB coupler port
 pwr = gpib(VENDOR, BOARD, ADDR);
 pwr.Timeout = timeout_s;
 fopen(pwr);
-cleanupObj = onCleanup(@() close_one(pwr)); %#ok<NASGU>
+cleanupObj = onCleanup(@() close_one(pwr)); 
 
 % Soft setup (won't error if unsupported)
 scpi_try_soft(pwr, {':UNIT:POW DBM','UNIT:POW DBM',':SENS:UNIT:POW DBM','SENS:UNIT:POW DBM'});

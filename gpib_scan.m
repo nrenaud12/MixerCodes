@@ -8,7 +8,7 @@ clear; clc;
 
 VENDOR = 'KEYSIGHT';
 BOARD  = 7;          % working board
-to = 3;              % short timeout so scan is quick
+to = 3;              % short timeout quick scan
 
 fprintf('Scanning GPIB board %d...\n', BOARD);
 

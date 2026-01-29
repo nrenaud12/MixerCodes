@@ -1,10 +1,9 @@
 % Define parameters
 gpibAddress = 19; 
 frequency_GHz = 8;
-power_dBm = -10;
+power_dBm = 10;
 
-resourceName = sprintf('GPIB0::%d::INSTR', gpibAddress);
-sigGen = visadev(resourceName);
+sigGen = visadev(sprintf('GPIB0::%d::INSTR', gpibAddress));
 
 try
     % 1. Preset the instrument
@@ -13,15 +12,12 @@ try
     
     % 2. SET FREQUENCY (CW mode)
     writeline(sigGen, sprintf('CW%fGZ', frequency_GHz));
-    pause(0.5);
-    
+
     % 3. SET POWER LEVEL
     writeline(sigGen, sprintf('PL%fDB', power_dBm));
-    pause(0.5);
     
     % 4. ENABLE RF OUTPUT
     writeline(sigGen, 'RF1'); 
-    pause(0.5);
     
     fprintf('Signal Generator set to %g GHz at %g dBm. RF is ON.\n', ...
             frequency_GHz, power_dBm);

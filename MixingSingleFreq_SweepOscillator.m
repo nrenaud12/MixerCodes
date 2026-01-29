@@ -1,10 +1,9 @@
-%% signal_gen_single_test_8350b.m
 % Single-tone output test for HP 8350B sweep oscillator (legacy HP-IB).
 clear; clc;
 
 %% ---- user settings ----
 ADDR   = 15;    % GPIB address of the sweep oscillator
-timeout_s = 10; % seconds
+timeout_s = 5; 
 write_retries = 3;
 write_pause_s = 0.2;
 
@@ -12,14 +11,14 @@ f_GHz = 7.000;  % target frequency
 p_dBm = -10;    % target power
 settle_s = 0.1;
 
-%% ---- open signal generator (VISA) ----
+%% ---- open signal generator ----
 resourceName = sprintf('GPIB0::%d::INSTR', ADDR);
 sigGen = visadev(resourceName);
 sigGen.Timeout = timeout_s;
-cleanupObj = onCleanup(@() close_one(sigGen)); %#ok<NASGU>
+cleanupObj = onCleanup(@() close_one(sigGen)); 
 configureTerminator(sigGen, "LF");
 
-%% ---- program 8350B (legacy mnemonics) ----
+%% ---- Speak to signal generator ----
 try
     write_with_retry(sigGen, 'IP', write_retries, write_pause_s);  % preset
     pause(0.5);

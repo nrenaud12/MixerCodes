@@ -18,12 +18,15 @@ BOARD = 7;
 SENSOR_ADDR = 12;
 SENSOR_TIMEOUT_S = 3;
 OFF_dB = 0; % +20 if reading a -20 dB coupler port
+set_sensor_freq = true; 
 
 % Timing
-settle_s = 2;          % wait after signal to settle before reading power
+settle_s = 2;          % wait after setting RF before reading power
 write_retries = 3;
 write_pause_s = 0.2;
-
+read_retries = 3;
+read_pause_s = 0.2;
+invalid_abs_threshold = 1e20;
 %% ---- open instruments ----
 synth = [];
 osc = [];
