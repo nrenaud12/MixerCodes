@@ -35,6 +35,7 @@ out_csv = 'mixer_conversion_loss_sweep_1ghz_13dBm.csv';
 rfFreqs_GHz = rfStart_GHz:rfStep_GHz:rfStop_GHz;
 numPoints = numel(rfFreqs_GHz);
 measuredPower_dBm = nan(numPoints, 1);
+loFreqs_GHz = rfFreqs_GHz - ifTarget_GHz;
 
 %% ---- open instruments ----
 RF = [];
@@ -77,19 +78,18 @@ try
     pwr.Timeout = SENSOR_TIMEOUT_S;
     fopen(pwr);
     cleanupPwr = onCleanup(@() close_one(pwr));
-    scpi_try_soft(pwr, {':UNIT:POW DBM','UNIT:POW DBM',':SENS:UNIT:POW DBM','SENS:UNIT:POW DBM'});
+    scpi_try_soft(pwr, ':UNIT:POW DBM');
 
     % Sweep loop
     for idx = 1:numPoints
         rfFreq = rfFreqs_GHz(idx);
-        loFreq_GHz = rfFreq - ifTarget_GHz;
+        loFreq_GHz = loFreqs_GHz(idx);
         write_with_retry(RF, sprintf('CW%fGZ', rfFreq), write_retries, write_pause_s);
         write_with_retry(LO, sprintf('CW%.6fGZ', loFreq_GHz), write_retries, write_pause_s);
         pause(settle_s);
 
-        scpi_try_soft(pwr, {':INIT:IMM','INIT:IMM',':INIT','INIT'});
-        measuredPower_dBm(idx) = scpi_query_num(pwr, ...
-            {':FETC?','FETC?',':READ?','READ?',':MEAS:POW?','MEAS:POW?',':MEAS?','MEAS?'}) + OFF_dB;
+        scpi_try_soft(pwr, ':INIT:IMM');
+        measuredPower_dBm(idx) = scpi_query_num(pwr, ':FETC?') + OFF_dB;
 
         fprintf('RF %.3f GHz / LO %.3f GHz -> %.2f dBm\n', ...
             rfFreq, loFreq_GHz, measuredPower_dBm(idx));

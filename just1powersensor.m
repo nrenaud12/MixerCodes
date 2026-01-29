@@ -1,8 +1,8 @@
 clear; clc;
 
 VENDOR = 'KEYSIGHT';
-BOARD  = 7;      % GPIB board index
-ADDR   = 12;     %Power sensor address
+BOARD = 7;       % GPIB board index
+ADDR = 12;       % Power sensor address
 timeout_s = 3;
 
 OFF_dB = 0;      % +20 if reading a -20 dB coupler port
@@ -11,14 +11,14 @@ OFF_dB = 0;      % +20 if reading a -20 dB coupler port
 pwr = gpib(VENDOR, BOARD, ADDR);
 pwr.Timeout = timeout_s;
 fopen(pwr);
-cleanupObj = onCleanup(@() close_one(pwr)); 
+cleanupObj = onCleanup(@() close_one(pwr));
 
 % Soft setup (won't error if unsupported)
-scpi_try_soft(pwr, {':UNIT:POW DBM','UNIT:POW DBM',':SENS:UNIT:POW DBM','SENS:UNIT:POW DBM'});
+scpi_try_soft(pwr, ':UNIT:POW DBM');
 
 % Read
-scpi_try_soft(pwr, {':INIT:IMM','INIT:IMM',':INIT','INIT'});
-P12 = scpi_query_num(pwr, {':FETC?','FETC?',':READ?','READ?',':MEAS:POW?','MEAS:POW?',':MEAS?','MEAS?'}) + OFF_dB;
+scpi_try_soft(pwr, ':INIT:IMM');
+P12 = scpi_query_num(pwr, ':FETC?') + OFF_dB;
 
 fprintf('P12 = %.2f dBm\n', P12);
 
